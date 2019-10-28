@@ -1,0 +1,18 @@
+python run.py ^
+    --model_type bert ^
+    --model_name_or_path d:/Heklis/bin/py/model ^
+    --task_name foodsafe ^
+    --do_train ^
+    --do_eval ^
+    --evaluate_during_training ^
+    --logging_steps 500 ^
+    --save_steps 500 ^
+    --do_lower_case ^
+    --data_dir foodsafe_data ^
+    --max_seq_length 105 ^
+    --per_gpu_eval_batch_size=4   ^
+    --per_gpu_train_batch_size=4   ^
+    --learning_rate 2e-5 ^
+    --num_train_epochs 4.0 ^
+    --output_dir output ^
+    --no_cuda
