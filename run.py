@@ -1,5 +1,3 @@
-# coding=utf-8
-
 import argparse
 import glob
 import logging
@@ -26,7 +24,6 @@ from transformers import AdamW, WarmupLinearSchedule
 
 from utils import (compute_metrics, output_modes, processors, InputFeatures, convert_examples_to_features)
 
-# from transformers import glue_convert_examples_to_features as convert_examples_to_features
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +33,7 @@ MODEL_CLASSES = {
 
 
 def set_seed(args):
+    """设定随机种子"""
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -79,10 +77,10 @@ def train(args, train_dataset, model, tokenizer):
     global_step = 0
     tr_loss, logging_loss = 0.0, 0.0
     model.zero_grad()
-    train_iterator = trange(int(args.num_train_epochs), desc="Epoch", disable=False)
-    set_seed(args)  # Added here for reproductibility (even between python 2 and 3)
+    train_iterator = trange(int(args.num_train_epochs), desc="Epoch", ascii=True)
+    set_seed(args)  # 设定随机种子，便于复现
     for _ in train_iterator:
-        epoch_iterator = tqdm(train_dataloader, desc="Iteration", disable=False)
+        epoch_iterator = tqdm(train_dataloader, desc="Iteration", ascii=True)
         for step, batch in enumerate(epoch_iterator):
             model.train()
             batch = tuple(t.to(args.device) for t in batch)
@@ -112,7 +110,7 @@ def train(args, train_dataset, model, tokenizer):
 
                 if args.logging_steps > 0 and global_step % args.logging_steps == 0:
                     # Log metrics
-                    if args.local_rank == -1 and args.evaluate_during_training:  # Only evaluate when single GPU otherwise metrics may not average well
+                    if args.evaluate_during_training:  # Only evaluate when single GPU otherwise metrics may not average well
                         results = evaluate(args, model, tokenizer)
                         for key, value in results.items():
                             tb_writer.add_scalar('eval_{}'.format(key), value, global_step)
@@ -167,7 +165,7 @@ def evaluate(args, model, tokenizer, prefix=""):
         nb_eval_steps = 0
         preds = None
         out_label_ids = None
-        for batch in tqdm(eval_dataloader, desc="Evaluating"):
+        for batch in tqdm(eval_dataloader, desc="Evaluating", ascii=True):
             model.eval()
             batch = tuple(t.to(args.device) for t in batch)
 
@@ -252,19 +250,19 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
 def main():
     parser = argparse.ArgumentParser()
 
-    ## Required parameters
+    ## 必须设定的参数
     parser.add_argument("--data_dir", default=None, type=str, required=True,
-                        help="The input data dir. Should contain the .tsv files (or other data files) for the task.")
+                        help="输入数据目录。")
     parser.add_argument("--model_type", default=None, type=str, required=True,
-                        help="Model type.")
+                        help="模型类型：bert还是其他。")
     parser.add_argument("--model_name_or_path", default=None, type=str, required=True,
-                        help="Path to pre-trained model.")
+                        help="预训练模型路径。")
     parser.add_argument("--task_name", default=None, type=str, required=True,
-                        help="The name of the task to train selected in the list: " + ", ".join(processors.keys()))
+                        help="任务名字。")
     parser.add_argument("--output_dir", default=None, type=str, required=True,
-                        help="The output directory where the model predictions and checkpoints will be written.")
+                        help="输出数据目录。")
 
-    ## Other parameters
+    ## 其他参数
     parser.add_argument("--cache_dir", default="", type=str,
                         help="Where do you want to store the pre-trained models downloaded from s3")
     parser.add_argument("--max_seq_length", default=128, type=int,
@@ -286,7 +284,7 @@ def main():
     parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
                         help="Number of updates steps to accumulate before performing a backward/update pass.")
     parser.add_argument("--learning_rate", default=5e-5, type=float,
-                        help="The initial learning rate for Adam.")
+                        help="初始学习率。")
     parser.add_argument("--weight_decay", default=0.0, type=float,
                         help="Weight deay if we apply some.")
     parser.add_argument("--adam_epsilon", default=1e-8, type=float,
@@ -307,13 +305,13 @@ def main():
     parser.add_argument("--eval_all_checkpoints", action='store_true',
                         help="Evaluate all checkpoints starting with the same prefix as model_name ending and ending with step number")
     parser.add_argument("--no_cuda", action='store_true',
-                        help="Avoid using CUDA when available")
+                        help="当电脑具有GPU时不使用cuda。")
     parser.add_argument('--overwrite_output_dir', action='store_true',
                         help="Overwrite the content of the output directory")
     parser.add_argument('--overwrite_cache', action='store_true',
                         help="Overwrite the cached training and evaluation sets")
     parser.add_argument('--seed', type=int, default=42,
-                        help="random seed for initialization")
+                        help="随机种子。")
 
 
     args = parser.parse_args()

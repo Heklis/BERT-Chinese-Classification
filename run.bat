@@ -14,5 +14,4 @@ python run.py ^
     --per_gpu_train_batch_size=4   ^
     --learning_rate 2e-5 ^
     --num_train_epochs 4.0 ^
-    --output_dir output ^
-    --no_cuda
+    --output_dir output

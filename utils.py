@@ -125,7 +125,7 @@ def convert_examples_to_features(examples, tokenizer,
     Loads a data file into a list of ``InputFeatures``
     Args:
         examples: List of ``InputExamples`` or ``tf.data.Dataset`` containing the examples.
-        tokenizer: Instance of a tokenizer that will tokenize the examples
+        tokenizer: Instance of a tokenizer that will okenize the examples
         max_length: Maximum example length
         task: GLUE task
         label_list: List of labels. Can be obtained from the processor using the ``processor.get_labels()`` method
@@ -135,7 +135,7 @@ def convert_examples_to_features(examples, tokenizer,
         pad_token_segment_id: The segment ID for the padding token (It is usually 0, but can vary such as for XLNet where it is 4)
         mask_padding_with_zero: If set to ``True``, the attention mask will be filled by ``1`` for actual values
             and by ``0`` for padded values. If set to ``False``, inverts it (``1`` for padded values, ``0`` for
-            actual values)
+            actual values)t
     Returns:
         If the ``examples`` input is a ``tf.data.Dataset``, will return a ``tf.data.Dataset``
         containing the task-specific features. If the input is a list of ``InputExamples``, will return
@@ -242,3 +242,40 @@ output_modes = {
 GLUE_TASKS_NUM_LABELS = {
     "foodsafe": 2
 }
+
+
+# 这部分代码仅仅是为了测试util的功能
+if __name__ == "__main__":
+    import logging
+    logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                    datefmt = '%m/%d/%Y %H:%M:%S',
+                    level = logging.ERROR)
+    logger = logging.getLogger(__name__)
+    from transformers import BertTokenizer
+    
+    task = "foodsafe"
+    # 数据集路径
+    data_dir = "foodsafe_data"
+    # 预训练模型路径
+    model_name_or_path = "d:/Heklis/bin/py/model"
+    # 最大序列长度
+    max_seq_length = 100
+
+    processor = processors[task]()
+    output_mode = output_modes[task]
+    # 读取标签
+    label_list = processor.get_labels() 
+    # 读取训练集
+    examples = processor.get_train_examples(data_dir)
+    # 载入预训练的分词器
+    tokenizer = BertTokenizer.from_pretrained(model_name_or_path)
+    # 构造特征
+    features = convert_examples_to_features(examples,
+                                            tokenizer,
+                                            label_list=label_list,
+                                            max_length=max_seq_length,
+                                            output_mode=output_mode,
+                                            pad_on_left=False,                 # pad on the left for xlnet
+                                            pad_token=tokenizer.convert_tokens_to_ids([tokenizer.pad_token])[0],
+                                            pad_token_segment_id=0,
+    )
