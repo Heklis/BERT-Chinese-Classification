@@ -4,5 +4,13 @@
 
 # 环境
 
-Windows 10，Python3，pytorch 1.x
+系统：Windows 10
+
+Python版本：Python3
+
+pytorch版本：pytorch 1.x
+
+依赖库：transformers 2.1.1
+
+GPU：1080 Ti （可通过降低序列长度和 batch size 来减弱对显存的要求）
 
