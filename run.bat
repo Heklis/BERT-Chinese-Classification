@@ -4,6 +4,7 @@ python run.py ^
     --task_name foodsafe ^
     --do_train ^
     --do_eval ^
+    --do_predict ^
     --evaluate_during_training ^
     --logging_steps 500 ^
     --save_steps 500 ^
@@ -13,5 +14,5 @@ python run.py ^
     --per_gpu_eval_batch_size=4   ^
     --per_gpu_train_batch_size=4   ^
     --learning_rate 2e-5 ^
-    --num_train_epochs 4.0 ^
+    --num_train_epochs 3 ^
     --output_dir output

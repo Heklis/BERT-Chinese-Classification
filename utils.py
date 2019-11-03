@@ -1,15 +1,11 @@
-# coding=utf-8
-
 import csv
 import logging
 import os
-import sys
 import copy
 import json
 from io import open
 
-from scipy.stats import pearsonr, spearmanr
-from sklearn.metrics import matthews_corrcoef, f1_score
+from sklearn.metrics import f1_score
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +51,6 @@ class InputFeatures(object):
         return json.dumps(self.to_dict(), indent=2, sort_keys=True) + "\n"
 
 
-
 class FoodsafeProcessor(object):
     """Processor for the CoLA data set (GLUE version)."""
 
@@ -74,7 +69,7 @@ class FoodsafeProcessor(object):
         with open(os.path.join(data_dir, "test.csv"), "r", encoding="utf-8-sig") as f:
             lines = []
             for line in f:
-                lines.append(line)     
+                lines.append(line)
         return self._create_samples(lines, "test")
 
     def get_labels(self):
@@ -113,14 +108,15 @@ class FoodsafeProcessor(object):
 
 
 def convert_examples_to_features(examples, tokenizer,
-                                      max_length=512,
-                                      task=None,
-                                      label_list=None,
-                                      output_mode=None,
-                                      pad_on_left=False,
-                                      pad_token=0,
-                                      pad_token_segment_id=0,
-                                      mask_padding_with_zero=True):
+                                 max_length=512,
+                                 task=None,
+                                 label_list=None,
+                                 output_mode=None,
+                                 pad_on_left=False,
+                                 pad_token=0,
+                                 pad_token_segment_id=0,
+                                 mask_padding_with_zero=True,
+                                 predict=False):
     """
     Loads a data file into a list of ``InputFeatures``
     Args:
@@ -141,7 +137,6 @@ def convert_examples_to_features(examples, tokenizer,
         containing the task-specific features. If the input is a list of ``InputExamples``, will return
         a list of task-specific ``InputFeatures`` which can be fed to the model.
     """
-    is_tf_dataset = False
 
     if task is not None:
         processor = processors[task]()
@@ -150,7 +145,8 @@ def convert_examples_to_features(examples, tokenizer,
             logger.info("Using label list %s for task %s" % (label_list, task))
         if output_mode is None:
             output_mode = output_modes[task]
-            logger.info("Using output mode %s for task %s" % (output_mode, task))
+            logger.info("Using output mode %s for task %s" %
+                        (output_mode, task))
 
     label_map = {label: i for i, label in enumerate(label_list)}
 
@@ -175,37 +171,47 @@ def convert_examples_to_features(examples, tokenizer,
         padding_length = max_length - len(input_ids)
         if pad_on_left:
             input_ids = ([pad_token] * padding_length) + input_ids
-            attention_mask = ([0 if mask_padding_with_zero else 1] * padding_length) + attention_mask
-            token_type_ids = ([pad_token_segment_id] * padding_length) + token_type_ids
+            attention_mask = ([0 if mask_padding_with_zero else 1]
+                              * padding_length) + attention_mask
+            token_type_ids = ([pad_token_segment_id] *
+                              padding_length) + token_type_ids
         else:
             input_ids = input_ids + ([pad_token] * padding_length)
-            attention_mask = attention_mask + ([0 if mask_padding_with_zero else 1] * padding_length)
-            token_type_ids = token_type_ids + ([pad_token_segment_id] * padding_length)
+            attention_mask = attention_mask + \
+                ([0 if mask_padding_with_zero else 1] * padding_length)
+            token_type_ids = token_type_ids + \
+                ([pad_token_segment_id] * padding_length)
 
-        assert len(input_ids) == max_length, "Error with input length {} vs {}".format(len(input_ids), max_length)
-        assert len(attention_mask) == max_length, "Error with input length {} vs {}".format(len(attention_mask), max_length)
-        assert len(token_type_ids) == max_length, "Error with input length {} vs {}".format(len(token_type_ids), max_length)
+        assert len(input_ids) == max_length, "Error with input length {} vs {}".format(
+            len(input_ids), max_length)
+        assert len(attention_mask) == max_length, "Error with input length {} vs {}".format(
+            len(attention_mask), max_length)
+        assert len(token_type_ids) == max_length, "Error with input length {} vs {}".format(
+            len(token_type_ids), max_length)
 
-        if output_mode == "classification":
+        label = None
+        if output_mode == "classification" and not predict:
             label = label_map[example.label]
-        elif output_mode == "regression":
+        elif output_mode == "regression" and not predict:
             label = float(example.label)
-        else:
-            raise KeyError(output_mode)
-
-        if ex_index < 5:
-            logger.info("*** Example ***")
-            logger.info("guid: %s" % (example.guid))
-            logger.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
-            logger.info("attention_mask: %s" % " ".join([str(x) for x in attention_mask]))
-            logger.info("token_type_ids: %s" % " ".join([str(x) for x in token_type_ids]))
-            logger.info("label: %s (id =p %d)" % (example.label, label))
+            
+        # if ex_index < 5:
+        #     logger.info("*** Example ***")
+        #     logger.info("guid: %s" % (example.guid))
+        #     logger.info("input_ids: %s" %
+        #                 " ".join([str(x) for x in input_ids]))
+        #     logger.info("attention_mask: %s" %
+        #                 " ".join([str(x) for x in attention_mask]))
+        #     logger.info("token_type_ids: %s" %
+        #                 " ".join([str(x) for x in token_type_ids]))
+        #     if not predict:
+        #         logger.info("label: %s (id =p %d)" % (example.label, label))
 
         features.append(
-                InputFeatures(input_ids=input_ids,
-                              attention_mask=attention_mask,
-                              token_type_ids=token_type_ids,
-                              label=label))
+            InputFeatures(input_ids=input_ids,
+                          attention_mask=attention_mask,
+                          token_type_ids=token_type_ids,
+                          label=label))
 
     return features
 
@@ -231,6 +237,7 @@ def compute_metrics(task_name, preds, labels):
     else:
         raise KeyError(task_name)
 
+
 processors = {
     "foodsafe": FoodsafeProcessor
 }
@@ -247,12 +254,12 @@ GLUE_TASKS_NUM_LABELS = {
 # 这部分代码仅仅是为了测试util的功能
 if __name__ == "__main__":
     import logging
-    logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
-                    datefmt = '%m/%d/%Y %H:%M:%S',
-                    level = logging.ERROR)
+    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                        datefmt='%m/%d/%Y %H:%M:%S',
+                        level=logging.ERROR)
     logger = logging.getLogger(__name__)
     from transformers import BertTokenizer
-    
+
     task = "foodsafe"
     # 数据集路径
     data_dir = "foodsafe_data"
@@ -264,7 +271,7 @@ if __name__ == "__main__":
     processor = processors[task]()
     output_mode = output_modes[task]
     # 读取标签
-    label_list = processor.get_labels() 
+    label_list = processor.get_labels()
     # 读取训练集
     examples = processor.get_train_examples(data_dir)
     # 载入预训练的分词器
@@ -276,6 +283,7 @@ if __name__ == "__main__":
                                             max_length=max_seq_length,
                                             output_mode=output_mode,
                                             pad_on_left=False,                 # pad on the left for xlnet
-                                            pad_token=tokenizer.convert_tokens_to_ids([tokenizer.pad_token])[0],
+                                            pad_token=tokenizer.convert_tokens_to_ids(
+                                                [tokenizer.pad_token])[0],
                                             pad_token_segment_id=0,
-    )
+                                            )
