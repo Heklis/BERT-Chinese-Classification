@@ -52,7 +52,7 @@ class InputFeatures(object):
 
 
 class FoodsafeProcessor(object):
-    """Processor for the CoLA data set (GLUE version)."""
+    """Processor for the Foodsafe data set."""
 
     def get_train_examples(self, data_dir):
         """See base class."""
